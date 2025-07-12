@@ -15,15 +15,26 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [profileVisible, setProfileVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [infoVisible, setInfoVisible] = useState(false); // NEW
+  const [infoVisible, setInfoVisible] = useState(false);
   const [userData, setUserData] = useState(null);
   const rotation = useState(new Animated.Value(0))[0];
+
+
+  const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  if (hour < 21) return 'Good Evening';
+  return 'Good Night';
+};
+
 
   useEffect(() => {
     (async () => {
@@ -60,19 +71,11 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => setProfileVisible(true)}>
-            <Image
-              source={require('../../assets/images/bg2.jpg')}
-              style={styles.avatar}
-            />
+            <Image source={require('../../assets/images/bg2.jpg')} style={styles.avatar} />
           </Pressable>
-
-          <Text style={styles.title}>
-            Strive<Text style={{ color: 'red' }}>X</Text>
-          </Text>
-
+          <Text style={styles.title}>Strive<Text style={{ color: 'red' }}>X</Text></Text>
           <Pressable onPress={handleSettingsPress}>
             <Animated.View style={{ transform: [{ rotate: rotationInterpolate }] }}>
               <Ionicons name="settings-outline" size={24} color="#fff" />
@@ -80,7 +83,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* Quest Card */}
         <View style={styles.questCard}>
           <Image source={require('../../assets/images/bg2.jpg')} style={styles.questImage} />
           <Text style={styles.questTitle}>Conquer the Day</Text>
@@ -91,17 +93,14 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Daily Stats */}
         <Text style={styles.sectionTitle}>Daily Stats</Text>
         <View style={styles.statsRow}>
           <View style={styles.statBox}><Text style={styles.statNumber}>6,000</Text><Text style={styles.statLabel}>Steps</Text></View>
           <View style={styles.statBox}><Text style={styles.statNumber}>4.5 km</Text><Text style={styles.statLabel}>Distance</Text></View>
         </View>
-        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}>
+        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}> 
           <Text style={styles.statNumber}>350 kcal</Text><Text style={styles.statLabel}>Calories</Text>
         </View>
-
-        {/* Daily Quest */}
         <Text style={styles.sectionTitle}>Daily Quest</Text>
         {['Bench Press', 'Leg Press', 'Deadlift'].map((exercise, i) => (
           <View key={i} style={styles.questRow}>
@@ -113,23 +112,13 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* Profile Modal */}
       <Modal visible={profileVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
             <Pressable style={styles.modalClose} onPress={() => setProfileVisible(false)}>
               <Ionicons name="close-circle" size={24} color="#aaa" />
             </Pressable>
-            <View style={{ position: 'relative' }}>
-              <Image
-                source={require('../../assets/images/bg2.jpg')}
-                style={styles.profileImage}
-              />
-              <Image
-                source={require('../../assets/images/Badges/crown.png')}
-                style={{ position: 'absolute', top: -10, left: 10, width: 30, height: 30 }}
-              />
-            </View>
+            <Image source={require('../../assets/images/bg2.jpg')} style={styles.profileImage} />
             <Text style={styles.profileLevel}>Level ∞</Text>
             <Text style={styles.profileName}>{userData?.name || 'Player Name'}</Text>
             <Text style={styles.profileInfo}>
@@ -144,13 +133,20 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Settings Modal */}
       <Modal visible={settingsVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
-            <Pressable style={styles.modalClose} onPress={handleSettingsPress}>
-              <Ionicons name="close-circle" size={24} color="#aaa" />
-            </Pressable>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+              <Pressable onPress={() => {
+                setSettingsVisible(false);
+                setTimeout(() => setInfoVisible(true), 300);
+              }}>
+                <Ionicons name="information-circle-outline" size={24} color="#ccc" />
+              </Pressable>
+              <Pressable onPress={handleSettingsPress}>
+                <Ionicons name="close-circle" size={24} color="#aaa" />
+              </Pressable>
+            </View>
 
             <Image source={require('../../assets/images/bg2.jpg')} style={styles.profileImage} />
             <Text style={styles.profileName}>{userData?.name || 'Player Name'}</Text>
@@ -158,29 +154,11 @@ export default function HomeScreen() {
             <Text style={{ color: '#fff', marginTop: 4 }}>Level: {userData?.level || '∞'}</Text>
             <Text style={{ color: '#fff', marginTop: 2 }}>Rank: {userData?.rank || '---'}</Text>
 
-            {/* App Info Button */}
-            <Pressable
-              onPress={() => {
-                setSettingsVisible(false);
-                setTimeout(() => setInfoVisible(true), 300);
-              }}
-              style={{
-                marginTop: 16,
-                paddingVertical: 10,
-                paddingHorizontal: 20,
-                borderRadius: 8,
-                backgroundColor: '#333',
-              }}
-            >
-              <Text style={{ color: '#fff', fontWeight: 'bold' }}>App Info</Text>
-            </Pressable>
-
-            {/* Logout Button */}
             <Pressable
               onPress={async () => {
                 await AsyncStorage.clear();
                 setSettingsVisible(false);
-                router.replace('/onboarding'); // Adjust route path
+                router.replace('/onboarding');
               }}
               style={{
                 marginTop: 20,
@@ -196,7 +174,6 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Info Modal */}
       <Modal visible={infoVisible} transparent animationType="fade">
         <View style={styles.modalBackground}>
           <View style={styles.modalContent}>
@@ -209,11 +186,14 @@ export default function HomeScreen() {
             <Text style={{ color: '#ccc', textAlign: 'center' }}>
               StriveX is your daily companion in becoming the fittest version of yourself. Track progress, complete daily quests, unlock titles, and stay motivated through gamified experiences.
             </Text>
+                <Text style={{ color: '#aaa', marginTop: 12 }}>
+  Version: {Constants.manifest?.version || 'v1.0.0 LITE'}
+</Text>
+                    <Text style={{ color: '#aaa', marginTop: 12 }}>(c) Flashcodes 2025</Text>
           </View>
         </View>
       </Modal>
 
-      {/* Bottom Tabs */}
       <Tabs.Screen
         options={{
           tabBarStyle: { backgroundColor: '#1c1c1e' },
@@ -231,11 +211,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
-    marginTop: 10,
+    marginTop: 15,
     alignItems: 'center',
   },
   avatar: { width: 36, height: 36, borderRadius: 18, marginTop: 5 },
   title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+
   questCard: {
     marginHorizontal: 20,
     backgroundColor: '#1e1e1e',
