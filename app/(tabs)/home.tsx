@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     alignItems: 'center',
   },
-  avatar: { width: 36, height: 36, borderRadius: 18 },
+  avatar: { width: 36, height: 36, borderRadius: 18, marginTop: 5 },
   title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
   questCard: {
     marginHorizontal: 20,

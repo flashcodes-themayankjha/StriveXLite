@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,7 +15,7 @@ export default function Index() {
 
       if (user) {
         if (hunter) {
-          router.replace('/home');
+          router.replace('/(tabs)/home'); // ✅ Corrected
         } else {
           router.replace('/hunter-details');
         }
@@ -31,7 +32,6 @@ export default function Index() {
   return (
     <View style={{ flex: 1, justifyContent: 'center', backgroundColor: '#121212' }}>
       {checking && <ActivityIndicator color="#1E90FF" size="large" />}
-    </View>
+    </View>  
   );
 }
-
