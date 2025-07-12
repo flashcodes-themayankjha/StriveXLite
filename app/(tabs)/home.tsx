@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -8,16 +9,21 @@ import {
   Modal,
   Dimensions,
   ScrollView,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [profileVisible, setProfileVisible] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [infoVisible, setInfoVisible] = useState(false); // NEW
   const [userData, setUserData] = useState(null);
+  const rotation = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     (async () => {
@@ -26,6 +32,26 @@ export default function HomeScreen() {
       setUserData(data);
     })();
   }, []);
+
+  const rotateSettingsIcon = (open) => {
+    Animated.timing(rotation, {
+      toValue: open ? 1 : 0,
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleSettingsPress = () => {
+    const opening = !settingsVisible;
+    rotateSettingsIcon(opening);
+    setSettingsVisible(opening);
+  };
+
+  const rotationInterpolate = rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   const currentSteps = 6000;
   const totalSteps = 10000;
@@ -42,8 +68,16 @@ export default function HomeScreen() {
               style={styles.avatar}
             />
           </Pressable>
-          <Text style={styles.title}>Strive<Text style={{ color: 'red' }}>X</Text></Text>
-          <Ionicons name="settings-outline" size={24} color="#fff" />
+
+          <Text style={styles.title}>
+            Strive<Text style={{ color: 'red' }}>X</Text>
+          </Text>
+
+          <Pressable onPress={handleSettingsPress}>
+            <Animated.View style={{ transform: [{ rotate: rotationInterpolate }] }}>
+              <Ionicons name="settings-outline" size={24} color="#fff" />
+            </Animated.View>
+          </Pressable>
         </View>
 
         {/* Quest Card */}
@@ -63,7 +97,7 @@ export default function HomeScreen() {
           <View style={styles.statBox}><Text style={styles.statNumber}>6,000</Text><Text style={styles.statLabel}>Steps</Text></View>
           <View style={styles.statBox}><Text style={styles.statNumber}>4.5 km</Text><Text style={styles.statLabel}>Distance</Text></View>
         </View>
-        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}> 
+        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}>
           <Text style={styles.statNumber}>350 kcal</Text><Text style={styles.statLabel}>Calories</Text>
         </View>
 
@@ -106,6 +140,75 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.profileTitle}>Title: {userData?.title || '---'}</Text>
             <Text style={styles.profileRank}>Rank: {userData?.rank || '---'}</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Settings Modal */}
+      <Modal visible={settingsVisible} transparent animationType="fade">
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <Pressable style={styles.modalClose} onPress={handleSettingsPress}>
+              <Ionicons name="close-circle" size={24} color="#aaa" />
+            </Pressable>
+
+            <Image source={require('../../assets/images/bg2.jpg')} style={styles.profileImage} />
+            <Text style={styles.profileName}>{userData?.name || 'Player Name'}</Text>
+            <Text style={{ color: '#aaa', marginTop: 6 }}>Hunter Profile</Text>
+            <Text style={{ color: '#fff', marginTop: 4 }}>Level: {userData?.level || '∞'}</Text>
+            <Text style={{ color: '#fff', marginTop: 2 }}>Rank: {userData?.rank || '---'}</Text>
+
+            {/* App Info Button */}
+            <Pressable
+              onPress={() => {
+                setSettingsVisible(false);
+                setTimeout(() => setInfoVisible(true), 300);
+              }}
+              style={{
+                marginTop: 16,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                backgroundColor: '#333',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>App Info</Text>
+            </Pressable>
+
+            {/* Logout Button */}
+            <Pressable
+              onPress={async () => {
+                await AsyncStorage.clear();
+                setSettingsVisible(false);
+                router.replace('/onboarding'); // Adjust route path
+              }}
+              style={{
+                marginTop: 20,
+                paddingVertical: 10,
+                paddingHorizontal: 20,
+                borderRadius: 8,
+                backgroundColor: '#ff4444',
+              }}
+            >
+              <Text style={{ color: '#fff', fontWeight: 'bold' }}>Quit Being a Hunter</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Info Modal */}
+      <Modal visible={infoVisible} transparent animationType="fade">
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContent}>
+            <Pressable style={styles.modalClose} onPress={() => setInfoVisible(false)}>
+              <Ionicons name="close-circle" size={24} color="#aaa" />
+            </Pressable>
+            <Text style={{ color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
+              About StriveX
+            </Text>
+            <Text style={{ color: '#ccc', textAlign: 'center' }}>
+              StriveX is your daily companion in becoming the fittest version of yourself. Track progress, complete daily quests, unlock titles, and stay motivated through gamified experiences.
+            </Text>
           </View>
         </View>
       </Modal>
@@ -230,4 +333,3 @@ const styles = StyleSheet.create({
   },
   profileRank: { color: '#ccc', textAlign: 'center', marginTop: 4 },
 });
-
