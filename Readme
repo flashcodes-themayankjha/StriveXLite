@@ -10,5 +10,6 @@ npm install expo-image expo-linear-gradient
 npm install react-hook-form yup @hookform/resolvers
 npx expo install react-native-svg
 npm install react-native-animatable
+npm install  @react-native-community/datetimepicker 
 
 
