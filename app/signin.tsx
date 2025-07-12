@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -31,8 +31,10 @@ export default function SigninScreen() {
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
-  const slideAnim = useRef(new Animated.Value(100)).current; // slide up
-  const fadeAnim = useRef(new Animated.Value(0)).current; // fade in
+  const slideAnim = useRef(new Animated.Value(100)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   useEffect(() => {
     Animated.parallel([
@@ -56,10 +58,8 @@ export default function SigninScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Top 50% image */}
       <Image source={require('../assets/images/bg2.jpg')} style={styles.banner} />
 
-      {/* Bottom 50% content with animation */}
       <Animated.View
         style={[
           styles.formContainer,
@@ -71,40 +71,52 @@ export default function SigninScreen() {
       >
         <Text style={styles.title}>Welcome Player</Text>
 
-   
-<View style={styles.inputGroup}>
-  <Controller
-    control={control}
-    name="email"
-    render={({ field: { onChange, value } }) => (
-      <TextInput
-        placeholder="Email"
-        placeholderTextColor="#aaa"
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        keyboardType="email-address"
-      />
-    )}
-  />
-  {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
+        <View style={styles.inputGroup}>
+          {/* Email */}
+          <Controller
+            control={control}
+            name="email"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Email"
+                placeholderTextColor="#aaa"
+                style={[
+                  styles.input,
+                  focusedField === 'email' && styles.inputFocused,
+                ]}
+                value={value}
+                onChangeText={onChange}
+                keyboardType="email-address"
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+              />
+            )}
+          />
+          {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-  <Controller
-    control={control}
-    name="password"
-    render={({ field: { onChange, value } }) => (
-      <TextInput
-        placeholder="Password"
-        placeholderTextColor="#aaa"
-        style={styles.input}
-        value={value}
-        onChangeText={onChange}
-        secureTextEntry
-      />
-    )}
-  />
-  {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
-</View>
+          {/* Password */}
+          <Controller
+            control={control}
+            name="password"
+            render={({ field: { onChange, value } }) => (
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor="#aaa"
+                style={[
+                  styles.input,
+                  focusedField === 'password' && styles.inputFocused,
+                ]}
+                value={value}
+                onChangeText={onChange}
+                secureTextEntry
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+              />
+            )}
+          />
+          {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+        </View>
+
         <Pressable style={styles.button} onPress={handleSubmit(onSubmit)}>
           <Text style={styles.buttonText}>Log In</Text>
         </Pressable>
@@ -153,6 +165,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
   },
+  inputGroup: {
+    marginTop: 10,
+    marginBottom: 10,
+  },
   input: {
     backgroundColor: '#222',
     color: '#fff',
@@ -160,16 +176,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     marginVertical: 6,
+    borderColor: '#333',
+    borderWidth: 1,
+  },
+  inputFocused: {
+    borderColor: '#1E90FF',
+    borderWidth: 2,
   },
   error: {
     color: '#f66',
     marginLeft: 6,
     marginBottom: 4,
   },
-  inputGroup: {
-      marginTop: 10,
-  marginBottom: 10, // Adjust gap as needed
-},
   button: {
     backgroundColor: '#1E90FF',
     borderRadius: 30,
