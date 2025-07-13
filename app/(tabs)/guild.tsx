@@ -4,6 +4,7 @@ export default function GuildScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>🛡️ Your Guild Page</Text>
+              <Text style={styles.text}> Comming Soon</Text>
     </View>
   );
 }
