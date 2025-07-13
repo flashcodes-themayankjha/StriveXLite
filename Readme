@@ -15,4 +15,8 @@ npm install tslib
 npm install moti react-native-reanimated
 
 npx expo install expo-constants
+npm install @react-native-picker/picker
+
+npx expo install react-native-reanimated-carousel
+npx expo install react-native-reanimated react-native-gesture-handler
 
