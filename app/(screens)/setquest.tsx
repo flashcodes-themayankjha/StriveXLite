@@ -3,12 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, TextInput,
-  Alert, Modal, FlatList,
+  Alert, Modal, FlatList,Animated,Easing
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import DayTabBar from '../../components/DayTabBar';
 import { workoutCategories } from '../../data/defaultPlan';
+
+
+
+
 
 const iconOptions = [
   'barbell-outline', 'bicycle-outline', 'walk-outline',
@@ -27,6 +31,11 @@ export default function SetQuestScreen() {
   const [iconPickerVisible, setIconPickerVisible] = useState(false);
   const [deletedCategory, setDeletedCategory] = useState(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
+
+
+
+  const rotateAnim = useState(new Animated.Value(0))[0];
+  const inputAnim = useState(new Animated.Value(0))[0]; // for slide and fade
 
   useEffect(() => {
     (async () => {
@@ -65,6 +74,46 @@ export default function SetQuestScreen() {
     setNewCategory('');
     setShowInput(false);
   };
+
+
+const toggleInput = () => {
+  const toValue = showInput ? 0 : 1;
+
+  Animated.parallel([
+    Animated.timing(rotateAnim, {
+      toValue,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }),
+    Animated.timing(inputAnim, {
+      toValue,
+      duration: 300,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }),
+  ]).start();
+
+  setShowInput(!showInput);
+};
+
+const inputTranslateY = inputAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: [-20, 0],
+});
+
+const inputOpacity = inputAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: [0, 1],
+});
+
+
+
+    const rotateInterpolate = rotateAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: ['0deg', '45deg'], // rotates + icon to ×
+});
+
 
   const dayCategory = workoutPlan[selectedDay] || 'Rest';
 
@@ -146,7 +195,7 @@ export default function SetQuestScreen() {
         <Text style={styles.tagline}>Level Up Your Fitness</Text>
       </View>
 
-      <Text style={styles.screenTitle}>Setting Up Daily Quest</Text>
+      <Text style={styles.screenTitle}>Quest System</Text>
       <DayTabBar onSelect={setSelectedDay} />
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -177,30 +226,44 @@ export default function SetQuestScreen() {
               <Text style={styles.chipText}>{cat.name}</Text>
             </Pressable>
           ))}
+ 
 
-          <Pressable style={styles.chipAdd} onPress={() => setShowInput(true)}>
-            <Ionicons name="add" size={20} color="#fff" />
-          </Pressable>
+<Pressable
+  style={styles.chipAdd}
+  onPress={toggleInput}
+>
+  <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+    <Ionicons name="add" size={20} color="#fff" />
+  </Animated.View>
+</Pressable>
         </View>
 
-        {showInput && (
-          <View style={styles.inputRow}>
-            <TextInput
-              value={newCategory}
-              onChangeText={setNewCategory}
-              placeholder="Custom category"
-              placeholderTextColor="#888"
-              style={styles.input}
-            />
-            <Pressable onPress={() => setIconPickerVisible(true)} style={styles.iconBtn}>
-              <Ionicons name={selectedIcon} size={20} color="#fff" />
-            </Pressable>
-            <Pressable style={styles.addBtn} onPress={addCustomCategory}>
-              <Text style={{ color: '#fff' }}>Add</Text>
-            </Pressable>
-          </View>
-        )}
-
+        
+<Animated.View
+  style={[
+    styles.inputRow,
+    {
+      opacity: inputOpacity,
+      transform: [{ translateY: inputTranslateY }],
+      height: showInput ? 'auto' : 0,
+      overflow: 'hidden',
+    },
+  ]}
+>
+  <TextInput
+    value={newCategory}
+    onChangeText={setNewCategory}
+    placeholder="Custom category"
+    placeholderTextColor="#888"
+    style={styles.input}
+  />
+  <Pressable onPress={() => setIconPickerVisible(true)} style={styles.iconBtn}>
+    <Ionicons name={selectedIcon} size={20} color="#fff" />
+  </Pressable>
+  <Pressable style={styles.addBtn} onPress={addCustomCategory}>
+    <Text style={{ color: '#fff' }}>Add</Text>
+  </Pressable>
+</Animated.View>
         {dayCategory !== 'Rest' && (
           <>
             <Text style={styles.subtitle}>Exercises:</Text>
