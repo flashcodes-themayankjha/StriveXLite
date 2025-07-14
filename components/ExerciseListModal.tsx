@@ -1,115 +1,159 @@
+
 // components/ExerciseListModal.tsx
-import React, { useEffect, useState } from 'react';
+
+import React, { useState } from 'react';
 import {
+  Modal,
   View,
   Text,
-  Modal,
-  FlatList,
   TextInput,
   Pressable,
   StyleSheet,
-  Image
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import exercisesData from '../data/defaultExercises.json';
+import type { Exercise } from '../data/defaultPlan';
 
-export default function ExerciseListModal({ visible, onClose, onSelect }) {
-  const [search, setSearch] = useState('');
-  const [exerciseList, setExerciseList] = useState([]);
-  const [infoExercise, setInfoExercise] = useState(null);
+type Props = {
+  visible: boolean;
+  onClose: () => void;
+  exercises: Exercise[];
+  onSave: (updated: Exercise[]) => void;
+};
 
-  useEffect(() => {
-    setExerciseList(exercisesData);
-  }, []);
+export default function ExerciseListModal({
+  visible,
+  onClose,
+  exercises,
+  onSave,
+}: Props) {
+  const [localList, setLocalList] = useState<Exercise[]>(exercises);
 
-  const filtered = exerciseList.filter((ex) =>
-    ex.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const updateExercise = (index: number, field: keyof Exercise, value: string) => {
+    const updated = [...localList];
+    if (field === 'name') updated[index][field] = value;
+    else updated[index][field] = parseInt(value) || 0;
+    setLocalList(updated);
+  };
+
+  const addExercise = () => {
+    setLocalList([...localList, { name: '', sets: 3, reps: 10 }]);
+  };
+
+  const removeExercise = (index: number) => {
+    const updated = [...localList];
+    updated.splice(index, 1);
+    setLocalList(updated);
+  };
 
   return (
-    <Modal visible={visible} animationType="slide">
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Exercise Library</Text>
-          <Pressable onPress={onClose}>
-            <Ionicons name="close" size={24} color="#fff" />
-          </Pressable>
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.overlay}>
+        <View style={styles.modal}>
+          <Text style={styles.header}>Edit Exercises</Text>
+
+          <FlatList
+            data={localList}
+            keyExtractor={(_, i) => i.toString()}
+            renderItem={({ item, index }) => (
+              <View style={styles.exerciseRow}>
+                <TextInput
+                  style={styles.input}
+                  value={item.name}
+                  placeholder="Exercise Name"
+                  placeholderTextColor="#777"
+                  onChangeText={(text) => updateExercise(index, 'name', text)}
+                />
+                <TextInput
+                  style={styles.smallInput}
+                  value={item.sets.toString()}
+                  keyboardType="number-pad"
+                  onChangeText={(text) => updateExercise(index, 'sets', text)}
+                />
+                <TextInput
+                  style={styles.smallInput}
+                  value={item.reps.toString()}
+                  keyboardType="number-pad"
+                  onChangeText={(text) => updateExercise(index, 'reps', text)}
+                />
+                <Pressable onPress={() => removeExercise(index)}>
+                  <Ionicons name="trash" size={20} color="#f66" />
+                </Pressable>
+              </View>
+            )}
+          />
+
+          <View style={styles.footer}>
+            <Pressable onPress={addExercise} style={styles.addButton}>
+              <Ionicons name="add-circle" size={20} color="#fff" />
+              <Text style={{ color: '#fff', marginLeft: 6 }}>Add</Text>
+            </Pressable>
+
+            <Pressable onPress={() => { onSave(localList); onClose(); }} style={styles.saveBtn}>
+              <Text style={{ color: '#fff' }}>Save</Text>
+            </Pressable>
+          </View>
         </View>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Search exercises..."
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
-        />
-
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.name}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.details}>{item.category} • {item.sets}×{item.reps}</Text>
-              </View>
-              <View style={styles.actions}>
-                <Pressable onPress={() => setInfoExercise(item)}>
-                  <Ionicons name="information-circle-outline" size={22} color="#ccc" />
-                </Pressable>
-                <Pressable onPress={() => onSelect(item)} style={styles.addBtn}>
-                  <Ionicons name="add" size={20} color="#fff" />
-                </Pressable>
-              </View>
-            </View>
-          )}
-        />
-
-        {/* GIF Modal */}
-        <Modal visible={!!infoExercise} transparent animationType="fade">
-          <Pressable style={styles.infoOverlay} onPress={() => setInfoExercise(null)}>
-            <View style={styles.infoModal}>
-              <Text style={styles.infoTitle}>{infoExercise?.name}</Text>
-              <Image
-                source={{ uri: infoExercise?.gif }}
-                style={styles.gifImage}
-                resizeMode="contain"
-              />
-              <Text style={styles.details}>{infoExercise?.sets} sets × {infoExercise?.reps} reps</Text>
-            </View>
-          </Pressable>
-        </Modal>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#121212', padding: 16 },
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  modal: {
+    backgroundColor: '#1e1e1e',
+    padding: 20,
+    borderRadius: 16,
+    width: '90%',
+    maxHeight: '85%',
+  },
   header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
   },
-  title: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
   input: {
-    backgroundColor: '#1e1e1e', color: '#fff', padding: 10, borderRadius: 8, marginBottom: 12
+    flex: 1,
+    backgroundColor: '#333',
+    color: '#fff',
+    padding: 8,
+    borderRadius: 6,
   },
-  card: {
-    backgroundColor: '#1e1e1e', padding: 12, borderRadius: 10,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10
+  smallInput: {
+    width: 50,
+    backgroundColor: '#333',
+    color: '#fff',
+    padding: 8,
+    borderRadius: 6,
+    textAlign: 'center',
   },
-  name: { color: '#fff', fontSize: 16 },
-  details: { color: '#aaa', fontSize: 13, marginTop: 4 },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  addBtn: {
-    backgroundColor: '#1E90FF', padding: 6, borderRadius: 6
+  footer: {
+    marginTop: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  infoOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center'
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#555',
+    padding: 10,
+    borderRadius: 8,
   },
-  infoModal: {
-    backgroundColor: '#1e1e1e', padding: 20, borderRadius: 12, width: '80%', alignItems: 'center'
+  saveBtn: {
+    backgroundColor: '#1E90FF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
   },
-  infoTitle: { color: '#fff', fontSize: 18, marginBottom: 10 },
-  gifImage: { width: 200, height: 200, borderRadius: 10, marginBottom: 10 }
 });
-

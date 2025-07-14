@@ -16,24 +16,37 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const [profileVisible, setProfileVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
-  const [infoVisible, setInfoVisible] = useState(false);
-  const [userData, setUserData] = useState(null);
-  const [exerciseList, setExerciseList] = useState([]);
-  const rotation = useState(new Animated.Value(0))[0];
+  const [userData, setUserData] = useState<any>(null);
+  const [exerciseList, setExerciseList] = useState<any[]>([]);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    if (hour < 21) return 'Good Evening';
-    return 'Good Night';
+  const settingsRotateAnim = useState(new Animated.Value(0))[0];
+
+  const toggleSettingsModal = () => {
+    Animated.timing(settingsRotateAnim, {
+      toValue: settingsVisible ? 0 : 1,
+      duration: 300,
+      easing: Easing.ease,
+      useNativeDriver: true,
+    }).start(() => {
+      setSettingsVisible(!settingsVisible);
+    });
+  };
+
+  const settingsRotate = settingsRotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const handleLogout = async () => {
+    await AsyncStorage.clear();
+    router.replace('/onboarding');
   };
 
   useEffect(() => {
@@ -57,36 +70,16 @@ export default function HomeScreen() {
     })();
   }, []);
 
-  const rotateSettingsIcon = (open) => {
-    Animated.timing(rotation, {
-      toValue: open ? 1 : 0,
-      duration: 500,
-      easing: Easing.out(Easing.ease),
-      useNativeDriver: true,
-    }).start();
-  };
+  const calculateXP = (sets: number, reps: number) => Math.floor(5 + sets * reps * 0.5);
 
-  const handleSettingsPress = () => {
-    const opening = !settingsVisible;
-    rotateSettingsIcon(opening);
-    setSettingsVisible(opening);
-  };
-
-  const rotationInterpolate = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
-
-  const calculateXP = (sets, reps) => Math.floor(5 + sets * reps * 0.5);
-
-  const completeExercise = async (exercise) => {
+  const completeExercise = async (exercise: any) => {
     const xpGained = calculateXP(exercise.sets, exercise.reps);
     let profile = { ...(userData || { xp: 0, level: 1 }) };
 
     profile.xp += xpGained;
     let leveledUp = false;
 
-    const xpNeeded = (level) => Math.floor(50 + 10 * level * 1.3);
+    const xpNeeded = (level: number) => Math.floor(50 + 10 * level * 1.3);
 
     while (profile.xp >= xpNeeded(profile.level)) {
       profile.xp -= xpNeeded(profile.level);
@@ -115,50 +108,18 @@ export default function HomeScreen() {
             <Image source={require('../../assets/images/bg2.jpg')} style={styles.avatar} />
           </Pressable>
           <Text style={styles.title}>Strive<Text style={{ color: 'red' }}>X</Text></Text>
-         
 
-          <Modal
-  animationType="slide"
-  transparent={true}
-  visible={settingsVisible}
-  onRequestClose={() => setSettingsVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContainer}>
-      <Text style={styles.modalTitle}>Settings</Text>
-
-      <Pressable
-        style={styles.modalBtn}
-        onPress={() => {
-          setSettingsVisible(false);
-          router.push('/setquest'); // navigates to SetQuestScreen
-        }}
-      >
-        <Ionicons name="calendar-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-        <Text style={styles.modalBtnText}>Edit Daily Quest</Text>
-      </Pressable>
-
-      <Pressable style={[styles.modalBtn, { backgroundColor: '#333' }]} onPress={() => setSettingsVisible(false)}>
-        <Text style={styles.modalBtnText}>Close</Text>
-      </Pressable>
-    </View>
-  </View>
-</Modal>
-
-
-          <Pressable onPress={handleSettingsPress}>
-            <Animated.View style={{ transform: [{ rotate: rotationInterpolate }] }}>
+          <Pressable onPress={toggleSettingsModal}>
+            <Animated.View style={{ transform: [{ rotate: settingsRotate }] }}>
               <Ionicons name="settings-outline" size={24} color="#fff" />
             </Animated.View>
           </Pressable>
-
-
         </View>
 
         <View style={styles.questCard}>
           <Image source={require('../../assets/images/bg2.jpg')} style={styles.questImage} />
           <Text style={styles.questTitle}>Conquer the Day</Text>
-          <Text style={styles.questDesc}>Embrace the challenge and push your limits. Every step counts towards your ultimate victory.</Text>
+          <Text style={styles.questDesc}>Embrace the challenge and push your limits.</Text>
           <Text style={styles.questGoal}>10000 steps</Text>
           <View style={styles.progressBarBackground}>
             <View style={[styles.progressBarFill, { width: `${progress}%` }]} />
@@ -185,14 +146,41 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {/* All modal and settings code remains unchanged */}
+      <Modal animationType="slide" transparent={true} visible={settingsVisible} onRequestClose={toggleSettingsModal}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Settings</Text>
 
-      <Tabs.Screen
-        options={{
-          tabBarStyle: { backgroundColor: '#1c1c1e' },
-          tabBarLabelStyle: { color: '#ccc' },
-        }}
-      />
+            <Pressable
+              style={styles.modalBtn}
+              onPress={() => {
+                toggleSettingsModal();
+                router.push('/setquest');
+              }}
+            >
+              <Ionicons name="calendar-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>Edit Daily Quest</Text>
+            </Pressable>
+
+            <Pressable style={styles.modalBtn} onPress={() => setIsDarkMode(!isDarkMode)}>
+              <Ionicons name="contrast-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</Text>
+            </Pressable>
+
+            <Pressable style={styles.modalBtn} onPress={handleLogout}>
+              <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>Logout</Text>
+            </Pressable>
+
+            <Pressable style={styles.modalBtn} onPress={toggleSettingsModal}>
+              <Ionicons name="close-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Tabs.Screen options={{ tabBarStyle: { backgroundColor: '#1c1c1e' }, tabBarLabelStyle: { color: '#ccc' } }} />
     </View>
   );
 }
@@ -208,7 +196,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: { width: 36, height: 36, borderRadius: 18, marginTop: 5 },
-  title: { color: '#fff', fontSize: 18, fontWeight: 'bold' },
+  title: { color: '#fff', fontSize: 30, fontWeight: 'bold' },
   questCard: {
     marginHorizontal: 20,
     backgroundColor: '#1e1e1e',
@@ -254,11 +242,7 @@ const styles = StyleSheet.create({
     width: '44%',
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
+  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
   statLabel: { color: '#aaa' },
   questRow: {
     flexDirection: 'row',
@@ -271,41 +255,35 @@ const styles = StyleSheet.create({
   },
   questText: { flex: 1, color: '#fff', fontSize: 16 },
   questMeta: { color: '#aaa', fontSize: 12, marginRight: 8 },
-
   modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-modalContainer: {
-  backgroundColor: '#1c1c1c',
-  padding: 20,
-  borderRadius: 16,
-  width: '80%',
-  alignItems: 'center',
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  color: '#fff',
-  marginBottom: 16,
-},
-modalBtn: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#1E90FF',
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderRadius: 10,
-  marginBottom: 12,
-  width: '100%',
-  justifyContent: 'center',
-},
-modalBtnText: {
-  color: '#fff',
-  fontSize: 14,
-  fontWeight: '500',
-},
-
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#1c1c1c',
+    padding: 20,
+    borderRadius: 16,
+    width: '80%',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 16,
+  },
+  modalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E90FF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 12,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  modalBtnText: { color: '#fff', fontSize: 14, fontWeight: '500' },
 });

@@ -1,17 +1,15 @@
 
-// At top
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ScrollView, TextInput,
-  Alert, Modal, FlatList,Animated,Easing
+  Alert, Modal, FlatList, Animated, Easing
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import DayTabBar from '../../components/DayTabBar';
-import { workoutCategories } from '../../data/defaultPlan';
-
-
-
+import { router } from 'expo-router';
+import ExerciseListModal from '../../components/ExerciseListModal';
+import { workoutCategories, defaultExercises } from '../../data/defaultPlan';
 
 
 const iconOptions = [
@@ -31,11 +29,10 @@ export default function SetQuestScreen() {
   const [iconPickerVisible, setIconPickerVisible] = useState(false);
   const [deletedCategory, setDeletedCategory] = useState(null);
   const [showUndoBanner, setShowUndoBanner] = useState(false);
-
-
+  const [exerciseModalVisible, setExerciseModalVisible] = useState(false);
 
   const rotateAnim = useState(new Animated.Value(0))[0];
-  const inputAnim = useState(new Animated.Value(0))[0]; // for slide and fade
+  const inputAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     (async () => {
@@ -50,7 +47,14 @@ export default function SetQuestScreen() {
   }, []);
 
   const updatePlanForDay = (day, category) => {
-    setWorkoutPlan((prev) => ({ ...prev, [day]: category.name || category }));
+    const catName = category.name || category;
+    setWorkoutPlan((prev) => ({ ...prev, [day]: catName }));
+
+    // Initialize exercises if not present
+    setExerciseSets((prev) => {
+      if (!prev[catName]) return { ...prev, [catName]: [] };
+      return prev;
+    });
   };
 
   const saveAll = async () => {
@@ -75,45 +79,41 @@ export default function SetQuestScreen() {
     setShowInput(false);
   };
 
+  const toggleInput = () => {
+    const toValue = showInput ? 0 : 1;
 
-const toggleInput = () => {
-  const toValue = showInput ? 0 : 1;
+    Animated.parallel([
+      Animated.timing(rotateAnim, {
+        toValue,
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(inputAnim, {
+        toValue,
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-  Animated.parallel([
-    Animated.timing(rotateAnim, {
-      toValue,
-      duration: 300,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }),
-    Animated.timing(inputAnim, {
-      toValue,
-      duration: 300,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }),
-  ]).start();
+    setShowInput(!showInput);
+  };
 
-  setShowInput(!showInput);
-};
+  const inputTranslateY = inputAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-20, 0],
+  });
 
-const inputTranslateY = inputAnim.interpolate({
-  inputRange: [0, 1],
-  outputRange: [-20, 0],
-});
+  const inputOpacity = inputAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
 
-const inputOpacity = inputAnim.interpolate({
-  inputRange: [0, 1],
-  outputRange: [0, 1],
-});
-
-
-
-    const rotateInterpolate = rotateAnim.interpolate({
-  inputRange: [0, 1],
-  outputRange: ['0deg', '45deg'], // rotates + icon to ×
-});
-
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
 
   const dayCategory = workoutPlan[selectedDay] || 'Rest';
 
@@ -188,12 +188,12 @@ const inputOpacity = inputAnim.interpolate({
 
   return (
     <View style={styles.container}>
-      <View style={{ alignItems: 'center', marginBottom: 20 }}>
+      <Pressable style={{ alignItems: 'center', marginBottom: 20 }} onPress={() => router.push('/home')}>
         <Text style={styles.logo}>
           Strive<Text style={styles.logoHighlight}>X</Text>
         </Text>
         <Text style={styles.tagline}>Level Up Your Fitness</Text>
-      </View>
+      </Pressable>
 
       <Text style={styles.screenTitle}>Quest System</Text>
       <DayTabBar onSelect={setSelectedDay} />
@@ -208,7 +208,13 @@ const inputOpacity = inputAnim.interpolate({
             <Pressable
               key={name}
               style={[styles.chip, dayCategory === name && styles.chipSelected]}
-              onPress={() => updatePlanForDay(selectedDay, { name })}
+              onPress={() => {
+                if (dayCategory === name) {
+                  setExerciseModalVisible(true);
+                } else {
+                  updatePlanForDay(selectedDay, { name });
+                }
+              }}
             >
               <Ionicons name={getIconForCategory(name)} size={16} color="#fff" style={{ marginRight: 6 }} />
               <Text style={styles.chipText}>{name}</Text>
@@ -218,7 +224,13 @@ const inputOpacity = inputAnim.interpolate({
           {customCategories.map((cat) => (
             <Pressable
               key={cat.name}
-              onPress={() => updatePlanForDay(selectedDay, cat)}
+              onPress={() => {
+                if (dayCategory === cat.name) {
+                  setExerciseModalVisible(true);
+                } else {
+                  updatePlanForDay(selectedDay, cat);
+                }
+              }}
               onLongPress={() => handleDeleteCategory(cat.name)}
               style={[styles.chip, dayCategory === cat.name && styles.chipSelected]}
             >
@@ -226,61 +238,60 @@ const inputOpacity = inputAnim.interpolate({
               <Text style={styles.chipText}>{cat.name}</Text>
             </Pressable>
           ))}
- 
 
-<Pressable
-  style={styles.chipAdd}
-  onPress={toggleInput}
->
-  <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
-    <Ionicons name="add" size={20} color="#fff" />
-  </Animated.View>
-</Pressable>
+          <Pressable style={styles.chipAdd} onPress={toggleInput}>
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Ionicons name="add" size={20} color="#fff" />
+            </Animated.View>
+          </Pressable>
         </View>
 
-        
-<Animated.View
-  style={[
-    styles.inputRow,
-    {
-      opacity: inputOpacity,
-      transform: [{ translateY: inputTranslateY }],
-      height: showInput ? 'auto' : 0,
-      overflow: 'hidden',
-    },
-  ]}
->
-  <TextInput
-    value={newCategory}
-    onChangeText={setNewCategory}
-    placeholder="Custom category"
-    placeholderTextColor="#888"
-    style={styles.input}
-  />
-  <Pressable onPress={() => setIconPickerVisible(true)} style={styles.iconBtn}>
-    <Ionicons name={selectedIcon} size={20} color="#fff" />
-  </Pressable>
-  <Pressable style={styles.addBtn} onPress={addCustomCategory}>
-    <Text style={{ color: '#fff' }}>Add</Text>
-  </Pressable>
-</Animated.View>
-        {dayCategory !== 'Rest' && (
-          <>
-            <Text style={styles.subtitle}>Exercises:</Text>
-            {(exerciseSets[dayCategory] || []).map((ex, i) => (
-              <Text key={i} style={styles.exerciseItem}>
-                • {ex.name} – {ex.sets} sets × {ex.reps} reps
-              </Text>
-            ))}
-          </>
-        )}
+        <Animated.View
+          style={[
+            styles.inputRow,
+            {
+              opacity: inputOpacity,
+              transform: [{ translateY: inputTranslateY }],
+              height: showInput ? 'auto' : 0,
+              overflow: 'hidden',
+            },
+          ]}
+        >
+          <TextInput
+            value={newCategory}
+            onChangeText={setNewCategory}
+            placeholder="Custom category"
+            placeholderTextColor="#888"
+            style={styles.input}
+          />
+          <Pressable onPress={() => setIconPickerVisible(true)} style={styles.iconBtn}>
+            <Ionicons name={selectedIcon} size={20} color="#fff" />
+          </Pressable>
+          <Pressable style={styles.addBtn} onPress={addCustomCategory}>
+            <Text style={{ color: '#fff' }}>Add</Text>
+          </Pressable>
+        </Animated.View>
+{dayCategory !== 'Rest' && (
+  <>
+    <Text style={styles.subtitle}>Exercises:</Text>
+    {(exerciseSets[dayCategory] && exerciseSets[dayCategory].length > 0
+      ? exerciseSets[dayCategory]
+      : defaultExercises[dayCategory] || []
+    ).map((ex, i) => (
+      <Text key={i} style={styles.exerciseItem}>
+        • {ex.name} – {ex.sets} sets × {ex.reps} reps
+      </Text>
+    ))}
+  </>
+)}
+
+
 
         <Pressable onPress={saveAll} style={styles.saveBtn}>
           <Text style={styles.saveText}>Save</Text>
         </Pressable>
       </ScrollView>
 
-      {/* Icon Picker */}
       <Modal visible={iconPickerVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -305,24 +316,33 @@ const inputOpacity = inputAnim.interpolate({
         </View>
       </Modal>
 
-      {/* Undo Snackbar */}
       {showUndoBanner && deletedCategory && (
         <View style={styles.undoBanner}>
-          <Text style={styles.undoText}>
-            Deleted "{deletedCategory.category.name}"
-          </Text>
+          <Text style={styles.undoText}>Deleted "{deletedCategory.category.name}"</Text>
           <Pressable onPress={undoDelete}>
             <Text style={styles.undoLink}>UNDO</Text>
           </Pressable>
         </View>
       )}
+
+      <ExerciseListModal
+        visible={exerciseModalVisible}
+        onClose={() => setExerciseModalVisible(false)}
+        category={dayCategory}
+        exercises={exerciseSets[dayCategory] || []}
+        setExercises={(newList) => {
+          const updated = { ...exerciseSets, [dayCategory]: newList };
+          setExerciseSets(updated);
+          AsyncStorage.setItem('userExerciseSets', JSON.stringify(updated));
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
-  logo: { fontSize: 36, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', marginVertical: 10, marginTop: 30 },
+  logo: { fontSize: 30, fontWeight: 'bold', color: '#FFFFFF', textAlign: 'center', marginVertical: 10, marginTop: 30 },
   logoHighlight: { color: '#FF3B30' },
   tagline: { color: '#aaa', fontSize: 14, marginTop: 4 },
   screenTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 16 },
@@ -332,7 +352,6 @@ const styles = StyleSheet.create({
   exerciseItem: { color: '#aaa', marginBottom: 4 },
   saveBtn: { marginTop: 20, backgroundColor: '#1E90FF', paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   saveText: { color: '#fff', fontWeight: 'bold' },
-
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 20, gap: 10 },
   chip: {
     backgroundColor: '#333',
@@ -351,11 +370,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
+  inputRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   input: {
     flex: 1,
     backgroundColor: '#1e1e1e',
@@ -365,40 +380,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginRight: 10,
   },
-  iconBtn: {
-    padding: 10,
-    backgroundColor: '#333',
-    borderRadius: 8,
-    marginRight: 6,
-  },
-  addBtn: {
-    backgroundColor: '#1E90FF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  modalOverlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: '#1e1e1e',
-    padding: 20,
-    borderRadius: 16,
-    width: '80%',
-  },
-  modalTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 14,
-    textAlign: 'center',
-  },
-  iconOption: {
-    flex: 1,
-    alignItems: 'center',
-    margin: 10,
-  },
+  iconBtn: { padding: 10, backgroundColor: '#333', borderRadius: 8, marginRight: 6 },
+  addBtn: { backgroundColor: '#1E90FF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#1e1e1e', padding: 20, borderRadius: 16, width: '80%' },
+  modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 14, textAlign: 'center' },
+  iconOption: { flex: 1, alignItems: 'center', margin: 10 },
   undoBanner: {
     position: 'absolute',
     bottom: 20,
