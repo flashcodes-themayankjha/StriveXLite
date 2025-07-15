@@ -12,10 +12,13 @@ import {
   Animated,
   Easing,
   Alert,
+  InteractionManager,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import HeaderBar from '../../components/HeaderBar';
+
 
 const { width } = Dimensions.get('window');
 
@@ -49,26 +52,42 @@ export default function HomeScreen() {
     router.replace('/onboarding');
   };
 
+
+
+
   useEffect(() => {
-    (async () => {
-      const raw = await AsyncStorage.getItem('hunterProfile');
-      const data = raw ? JSON.parse(raw) : null;
-      setUserData(data);
+    InteractionManager.runAfterInteractions(() => {
+      (async () => {
+        const raw = await AsyncStorage.getItem('hunterProfile');
+        const data = raw ? JSON.parse(raw) : null;
+        setUserData(data);
 
-      const today = new Date().getDay();
-      const planRaw = await AsyncStorage.getItem('userWorkoutPlan');
-      const workoutPlan = planRaw ? JSON.parse(planRaw) : {};
+        const today = new Date().getDay();
+        const planRaw = await AsyncStorage.getItem('userWorkoutPlan');
+        const workoutPlan = planRaw ? JSON.parse(planRaw) : {};
 
-      const todayCategory = workoutPlan[today];
-      if (!todayCategory) return;
+        console.log('Today:', today);
+        console.log('Workout Plan:', workoutPlan);
 
-      const setsRaw = await AsyncStorage.getItem('userExerciseSets');
-      const allSets = setsRaw ? JSON.parse(setsRaw) : {};
-      const todayExercises = allSets[todayCategory] || [];
+        const todayCategory = workoutPlan[today];
+        console.log('Today\'s Category:', todayCategory);
+        if (!todayCategory) return;
 
-      setExerciseList(todayExercises);
-    })();
+        const setsRaw = await AsyncStorage.getItem('userExerciseSets');
+        const allSets = setsRaw ? JSON.parse(setsRaw) : {};
+        console.log('All Exercise Sets:', allSets);
+
+        const todayExercises = allSets[todayCategory] || [];
+        console.log('Today\'s Exercises:', todayExercises);
+
+        setExerciseList(todayExercises);
+      })();
+    });
   }, []);
+
+
+
+
 
   const calculateXP = (sets: number, reps: number) => Math.floor(5 + sets * reps * 0.5);
 
@@ -100,22 +119,13 @@ export default function HomeScreen() {
   const totalSteps = 10000;
   const progress = (currentSteps / totalSteps) * 100;
 
+
+
   return (
     <View style={styles.container}>
+            
+     <HeaderBar showBack showSettings={false} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Pressable onPress={() => setProfileVisible(true)}>
-            <Image source={require('../../assets/images/bg2.jpg')} style={styles.avatar} />
-          </Pressable>
-          <Text style={styles.title}>Strive<Text style={{ color: 'red' }}>X</Text></Text>
-
-          <Pressable onPress={toggleSettingsModal}>
-            <Animated.View style={{ transform: [{ rotate: settingsRotate }] }}>
-              <Ionicons name="settings-outline" size={24} color="#fff" />
-            </Animated.View>
-          </Pressable>
-        </View>
-
         <View style={styles.questCard}>
           <Image source={require('../../assets/images/bg2.jpg')} style={styles.questImage} />
           <Text style={styles.questTitle}>Conquer the Day</Text>
@@ -131,7 +141,7 @@ export default function HomeScreen() {
           <View style={styles.statBox}><Text style={styles.statNumber}>6,000</Text><Text style={styles.statLabel}>Steps</Text></View>
           <View style={styles.statBox}><Text style={styles.statNumber}>4.5 km</Text><Text style={styles.statLabel}>Distance</Text></View>
         </View>
-        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}> 
+        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}>
           <Text style={styles.statNumber}>350 kcal</Text><Text style={styles.statLabel}>Calories</Text>
         </View>
 
@@ -155,7 +165,7 @@ export default function HomeScreen() {
               style={styles.modalBtn}
               onPress={() => {
                 toggleSettingsModal();
-                router.push('/setquest');
+                setTimeout(() => { router.push('/setquest') }, 50);
               }}
             >
               <Ionicons name="calendar-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
@@ -166,9 +176,11 @@ export default function HomeScreen() {
               <Ionicons name="contrast-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
               <Text style={styles.modalBtnText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</Text>
             </Pressable>
-<Pressable onPress={() => router.push('/ExerciseCardPreview')}>
-  <Text style={styles.modalBtn}>Component Preview</Text>
-</Pressable>
+
+            <Pressable style={styles.modalBtn} onPress={() => router.push('/ExerciseCardPreview')}>
+              <MaterialCommunityIcons name="code-tags-check" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>Component Preview</Text>
+            </Pressable>
 
             <Pressable style={styles.modalBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 8 }} />

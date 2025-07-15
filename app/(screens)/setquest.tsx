@@ -141,7 +141,7 @@ console.log('Exercises:', exerciseSets[dayCategory] || defaultExercises[dayCateg
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>
-          Select Category for {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][selectedDay]}
+          Select Category for {['Sunday', 'Monday', 'Tuesday', 'Wednessday', 'Thursday', 'Friday', 'Saturday'][selectedDay]}
         </Text>
 
         {/* Chips */}
@@ -182,27 +182,30 @@ console.log('Exercises:', exerciseSets[dayCategory] || defaultExercises[dayCateg
         </Animated.View>
 
         {/* Exercise Cards */}
-       
+
 {dayCategory !== 'Rest' && (
   <>
     <Text style={styles.subtitle}>Exercises:</Text>
-    {currentExercises.map((exercise, idx) => (
+    {(exerciseSets[dayCategory] && exerciseSets[dayCategory].length > 0
+      ? exerciseSets[dayCategory]
+      : defaultExercises[dayCategory] || []
+    ).map((exercise, idx) => (
       <ExerciseCard
         key={idx}
         exercise={exercise}
         onSetChange={(delta) => {
-          const updated = [...currentExercises];
+          const updated = [...(exerciseSets[dayCategory] || defaultExercises[dayCategory])];
           updated[idx].sets = Math.max(1, updated[idx].sets + delta);
-          const updatedSets = { ...exerciseSets, [dayCategory]: updated };
-          setExerciseSets(updatedSets);
-          AsyncStorage.setItem('userExerciseSets', JSON.stringify(updatedSets));
+          const newSets = { ...exerciseSets, [dayCategory]: updated };
+          setExerciseSets(newSets);
+          AsyncStorage.setItem('userExerciseSets', JSON.stringify(newSets));
         }}
         onRepChange={(delta) => {
-          const updated = [...currentExercises];
+          const updated = [...(exerciseSets[dayCategory] || defaultExercises[dayCategory])];
           updated[idx].reps = Math.max(1, updated[idx].reps + delta);
-          const updatedSets = { ...exerciseSets, [dayCategory]: updated };
-          setExerciseSets(updatedSets);
-          AsyncStorage.setItem('userExerciseSets', JSON.stringify(updatedSets));
+          const newSets = { ...exerciseSets, [dayCategory]: updated };
+          setExerciseSets(newSets);
+          AsyncStorage.setItem('userExerciseSets', JSON.stringify(newSets));
         }}
       />
     ))}
@@ -240,7 +243,7 @@ const styles = StyleSheet.create({
   tagline: { fontSize: 12, color: '#888' },
   screenTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold', textAlign: 'center', marginBottom: 12 },
   content: { paddingHorizontal: 20 },
-  title: { color: '#fff', fontSize: 16, marginBottom: 10 },
+  title: { color: '#fff', fontSize: 16, marginBottom: 10 ,marginTop: 12 },
   subtitle: { color: '#aaa', marginVertical: 8, fontSize: 14 },
   chipContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
   chip: {
