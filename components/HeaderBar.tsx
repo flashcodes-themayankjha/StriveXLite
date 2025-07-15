@@ -181,6 +181,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 20,
+    marginTop: 10,
+    marginBottom:8,
     paddingBottom: 12,
   },
   avatar: {

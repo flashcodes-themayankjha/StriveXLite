@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import ExerciseListModal from '../../components/ExerciseListModal';
 import { workoutCategories, defaultExercises } from '../../data/defaultPlan';
 import ExerciseCard from '../../components/ExerciseCard';
+import HeaderBar from '../../components/HeaderBar';
 
 const iconOptions = [
   'barbell-outline', 'bicycle-outline', 'walk-outline',
@@ -126,16 +127,7 @@ console.log('Exercises:', exerciseSets[dayCategory] || defaultExercises[dayCateg
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => router.push('/home')}>
-          <Text style={styles.logo}>Strive<Text style={styles.logoHighlight}>X</Text></Text>
-          <Text style={styles.tagline}>Level Up Your Fitness</Text>
-        </Pressable>
-        <Pressable onPress={() => setInfoVisible(true)}>
-          <Ionicons name="information-circle-outline" size={26} color="#ccc" />
-        </Pressable>
-      </View>
-
+      <HeaderBar/>
       <Text style={styles.screenTitle}>Quest System</Text>
       <DayTabBar onSelect={setSelectedDay} />
 
