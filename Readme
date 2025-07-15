@@ -19,4 +19,6 @@ npm install @react-native-picker/picker
 
 npx expo install react-native-reanimated-carousel
 npx expo install react-native-reanimated react-native-gesture-handler
+npx expo install expo-haptics
 
+npx expo install expo-haptics

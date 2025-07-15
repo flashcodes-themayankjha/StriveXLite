@@ -166,6 +166,9 @@ export default function HomeScreen() {
               <Ionicons name="contrast-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
               <Text style={styles.modalBtnText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</Text>
             </Pressable>
+<Pressable onPress={() => router.push('/ExerciseCardPreview')}>
+  <Text style={styles.modalBtn}>Component Preview</Text>
+</Pressable>
 
             <Pressable style={styles.modalBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
