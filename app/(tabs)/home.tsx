@@ -91,12 +91,21 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Stats
-          steps={currentSteps}
-          distance={4.5}
-          calories={350}
-          onHydrationTapSeries={handleHydrationTapSeries}
-        />
+ <Stats
+  steps={currentSteps}
+  distance={4.5}
+  calories={350}
+  onHydrationTapSeries={handleHydrationTapSeries}
+  onAddXP={(amount) => {
+    const updated = {
+      ...userData,
+      xp: (userData?.xp || 0) + amount,
+    };
+    setUserData(updated);
+    AsyncStorage.setItem('hunterProfile', JSON.stringify(updated));
+  }}
+/>
+
 
         <Quest
           exerciseList={exerciseList}

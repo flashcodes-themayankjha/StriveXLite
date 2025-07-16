@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,44 +8,51 @@ import {
   Vibration,
 } from 'react-native';
 import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface Props {
   steps: number;
   distance: number;
   calories: number;
-  hydration?: number;
-  onHydrationChange?: (level: number) => void;
   onHydrationTapSeries?: () => void;
+  onAddXP?: (amount: number) => void; // 🔁 from HunterProfile
 }
 
 export default function Stats({
   steps,
   distance,
   calories,
-  hydration = 0,
-  onHydrationChange,
   onHydrationTapSeries,
+  onAddXP,
 }: Props) {
-  const [localHydration, setLocalHydration] = useState(hydration);
-  const hydrationResetTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [localHydration, setLocalHydration] = useState(0);
 
   useEffect(() => {
-    if (hydrationResetTimeout.current) clearTimeout(hydrationResetTimeout.current);
-    hydrationResetTimeout.current = setTimeout(() => {
-      setLocalHydration(0);
-      onHydrationChange?.(0);
-    }, 6 *60 * 60 * 1000); // Reset every 6 hours 
-
-    return () => {
-      if (hydrationResetTimeout.current) clearTimeout(hydrationResetTimeout.current);
+    const loadHydration = async () => {
+      const stored = await AsyncStorage.getItem('hydration');
+      if (stored) setLocalHydration(Number(stored));
     };
+    loadHydration();
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem('hydration', String(localHydration));
+    const timeout = setTimeout(async () => {
+      setLocalHydration(0);
+      await AsyncStorage.setItem('hydration', '0');
+    }, 5 * 60 * 1000); // 5 minutes
+
+    return () => clearTimeout(timeout);
   }, [localHydration]);
 
-  const handleHydrationTap = () => {
-    Vibration.vibrate(50);
+  const handleHydrationTap = async () => {
     const newHydration = Math.min(localHydration + 10, 100);
     setLocalHydration(newHydration);
-    onHydrationChange?.(newHydration);
+    Vibration.vibrate(40);
+
+    if (newHydration === 100) {
+      await trackHydrationStreak();
+    }
   };
 
   const handleHydrationLongPress = () => {
@@ -53,57 +60,67 @@ export default function Stats({
     onHydrationTapSeries?.();
   };
 
-  const handleGenericCardTap = () => {
-    Vibration.vibrate(10); // light haptic feedback for non-hydration cards
+  const trackHydrationStreak = async () => {
+    const today = new Date().toDateString();
+    const lastDate = await AsyncStorage.getItem('lastHydratedDate');
+    const currentStreak = parseInt((await AsyncStorage.getItem('hydrationStreak')) || '0', 10);
+
+    if (lastDate === today) return;
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    let newStreak = lastDate === yesterday.toDateString() ? currentStreak + 1 : 1;
+
+    if (newStreak >= 4) {
+      onAddXP?.(100); // ✅ use HunterProfile XP logic
+      newStreak = 0;
+    }
+
+    await AsyncStorage.setItem('hydrationStreak', String(newStreak));
+    await AsyncStorage.setItem('lastHydratedDate', today);
   };
 
-  const hydrationColor = `rgba(0,191,255,${localHydration / 100})`;
+  const getHydrationIcon = () => {
+    if (localHydration === 0)
+      return <MaterialCommunityIcons name="water-remove-outline" size={30} color="#808080" />;
+    if (localHydration === 100)
+      return <MaterialCommunityIcons name="water-check" size={30} color="#00BFFF" />;
+    return <MaterialCommunityIcons name="water-opacity" size={30} color="#00BFFF" />;
+  };
 
   return (
     <View style={styles.wrapper}>
       <Text style={styles.sectionTitle}>Daily Stats</Text>
 
       <View style={styles.statsRow}>
-        <Pressable
-          onPress={handleGenericCardTap}
-          style={({ pressed }) => [styles.statBox, pressed && styles.pressed]}
-        >
-          <FontAwesome5 name="walking" size={20} color="#1E90FF" style={styles.icon} />
+        <Pressable style={styles.statBox} android_ripple={{ color: '#333' }} onPress={() => Vibration.vibrate(20)}>
+          <FontAwesome5 name="walking" size={24} color="#1E90FF" style={styles.icon} />
           <Text style={styles.statNumber}>{steps.toLocaleString()}</Text>
           <Text style={styles.statLabel}>Steps</Text>
         </Pressable>
 
-        <Pressable
-          onPress={handleGenericCardTap}
-          style={({ pressed }) => [styles.statBox, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons name="map-marker-distance" size={20} color="#32CD32" style={styles.icon} />
+        <Pressable style={styles.statBox} android_ripple={{ color: '#333' }} onPress={() => Vibration.vibrate(20)}>
+          <MaterialCommunityIcons name="map-marker-distance" size={24} color="#32CD32" style={styles.icon} />
           <Text style={styles.statNumber}>{distance.toFixed(1)} km</Text>
           <Text style={styles.statLabel}>Distance</Text>
         </Pressable>
       </View>
 
       <View style={styles.statsRow}>
-        <Pressable
-          onPress={handleGenericCardTap}
-          style={({ pressed }) => [styles.statBox, pressed && styles.pressed]}
-        >
-          <MaterialCommunityIcons name="fire" size={20} color="#FF6347" style={styles.icon} />
+        <Pressable style={styles.statBox} android_ripple={{ color: '#333' }} onPress={() => Vibration.vibrate(20)}>
+          <MaterialCommunityIcons name="fire" size={30} color="#FF6347" style={styles.icon} />
           <Text style={styles.statNumber}>{calories.toFixed(1)} kcal</Text>
           <Text style={styles.statLabel}>Calories</Text>
         </Pressable>
 
         <Pressable
+          style={styles.statBox}
           onPress={handleHydrationTap}
           onLongPress={handleHydrationLongPress}
-          style={({ pressed }) => [styles.statBox, pressed && styles.pressed]}
+          android_ripple={{ color: '#333' }}
         >
-          <MaterialCommunityIcons
-            name="water"
-            size={40}
-            color={hydrationColor}
-            style={styles.icon}
-          />
+          <View style={styles.icon}>{getHydrationIcon()}</View>
           <Text style={styles.statNumber}>{localHydration}%</Text>
           <Text style={styles.statLabel}>Hydration</Text>
         </Pressable>
@@ -132,9 +149,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     width: '44%',
     alignItems: 'center',
-  },
-  pressed: {
-    backgroundColor: '#2a2a2a',
   },
   statNumber: {
     fontSize: 18,
