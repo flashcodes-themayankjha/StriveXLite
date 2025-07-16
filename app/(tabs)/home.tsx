@@ -1,24 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Pressable,
-  Modal,
-  Dimensions,
-  ScrollView,
-  Animated,
-  Easing,
-  Alert,
-  InteractionManager,
+  View, Text, StyleSheet, Image, Pressable,
+  Modal, Dimensions, ScrollView, Animated, Easing, Alert, InteractionManager
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import HeaderBar from '../../components/HeaderBar';
+import { useFocusEffect } from '@react-navigation/native';
 
+import HeaderBar from '../../components/HeaderBar';
+import Stats from '../../components/home/Stats';
+import Quest from '../../components/home/Quest';
 
 const { width } = Dimensions.get('window');
 
@@ -52,9 +45,6 @@ export default function HomeScreen() {
     router.replace('/onboarding');
   };
 
-
-
-
   useEffect(() => {
     InteractionManager.runAfterInteractions(() => {
       (async () => {
@@ -66,65 +56,25 @@ export default function HomeScreen() {
         const planRaw = await AsyncStorage.getItem('userWorkoutPlan');
         const workoutPlan = planRaw ? JSON.parse(planRaw) : {};
 
-        console.log('Today:', today);
-        console.log('Workout Plan:', workoutPlan);
-
         const todayCategory = workoutPlan[today];
-        console.log('Today\'s Category:', todayCategory);
         if (!todayCategory) return;
 
         const setsRaw = await AsyncStorage.getItem('userExerciseSets');
         const allSets = setsRaw ? JSON.parse(setsRaw) : {};
-        console.log('All Exercise Sets:', allSets);
-
         const todayExercises = allSets[todayCategory] || [];
-        console.log('Today\'s Exercises:', todayExercises);
 
         setExerciseList(todayExercises);
       })();
     });
   }, []);
 
-
-
-
-
-  const calculateXP = (sets: number, reps: number) => Math.floor(5 + sets * reps * 0.5);
-
-  const completeExercise = async (exercise: any) => {
-    const xpGained = calculateXP(exercise.sets, exercise.reps);
-    let profile = { ...(userData || { xp: 0, level: 1 }) };
-
-    profile.xp += xpGained;
-    let leveledUp = false;
-
-    const xpNeeded = (level: number) => Math.floor(50 + 10 * level * 1.3);
-
-    while (profile.xp >= xpNeeded(profile.level)) {
-      profile.xp -= xpNeeded(profile.level);
-      profile.level++;
-      leveledUp = true;
-    }
-
-    await AsyncStorage.setItem('hunterProfile', JSON.stringify(profile));
-    setUserData(profile);
-
-    Alert.alert(
-      leveledUp ? '🎉 Level Up!' : '✅ Exercise Complete',
-      leveledUp ? `New Level: ${profile.level}` : `+${xpGained} XP`
-    );
-  };
-
   const currentSteps = 6000;
   const totalSteps = 10000;
   const progress = (currentSteps / totalSteps) * 100;
 
-
-
   return (
     <View style={styles.container}>
-            
-     <HeaderBar showBack showSettings={false} />
+      <HeaderBar showBack showSettings={false} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.questCard}>
           <Image source={require('../../assets/images/bg2.jpg')} style={styles.questImage} />
@@ -136,26 +86,17 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Daily Stats</Text>
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}><Text style={styles.statNumber}>6,000</Text><Text style={styles.statLabel}>Steps</Text></View>
-          <View style={styles.statBox}><Text style={styles.statNumber}>4.5 km</Text><Text style={styles.statLabel}>Distance</Text></View>
-        </View>
-        <View style={[styles.statBox, { alignSelf: 'center', width: '92%' }]}>
-          <Text style={styles.statNumber}>350 kcal</Text><Text style={styles.statLabel}>Calories</Text>
-        </View>
+        {/* ⬇️ Modularized components */}
+        <Stats steps={currentSteps} distance={4.5} calories={350} />
 
-        <Text style={styles.sectionTitle}>Daily Quest</Text>
-        {exerciseList.map((exercise, i) => (
-          <Pressable key={i} style={styles.questRow} onPress={() => completeExercise(exercise)}>
-            <MaterialCommunityIcons name="dumbbell" size={20} color="#ccc" style={{ marginRight: 8 }} />
-            <Text style={styles.questText}>{exercise.name}</Text>
-            <Text style={styles.questMeta}>{exercise.reps} Reps • {exercise.sets} Sets</Text>
-            <Ionicons name="checkmark-done" size={18} color="#6cff6c" />
-          </Pressable>
-        ))}
+        <Quest
+          exerciseList={exerciseList}
+          userData={userData}
+          onProfileUpdate={(profile) => setUserData(profile)}
+        />
       </ScrollView>
 
+      {/* Settings Modal */}
       <Modal animationType="slide" transparent={true} visible={settingsVisible} onRequestClose={toggleSettingsModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -177,10 +118,11 @@ export default function HomeScreen() {
               <Text style={styles.modalBtnText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</Text>
             </Pressable>
 
-            <Pressable style={styles.modalBtn} onPress={() => router.push('/ExerciseCardPreview')}>
-              <MaterialCommunityIcons name="code-tags-check" size={18} color="#fff" style={{ marginRight: 8 }} />
-              <Text style={styles.modalBtnText}>Component Preview</Text>
-            </Pressable>
+  <Pressable style={styles.modalBtn} onPress={() => router.push('/DBPreview')}>
+  <MaterialCommunityIcons name="code-tags-check" size={18} color="#fff" style={{ marginRight: 8 }} />
+  <Text style={styles.modalBtnText}>Component Preview</Text>
+</Pressable>
+
 
             <Pressable style={styles.modalBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
@@ -203,15 +145,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#121212' },
   scrollContent: { paddingBottom: 90 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 20,
-    marginTop: 15,
-    alignItems: 'center',
-  },
-  avatar: { width: 36, height: 36, borderRadius: 18, marginTop: 5 },
-  title: { color: '#fff', fontSize: 30, fontWeight: 'bold' },
   questCard: {
     marginHorizontal: 20,
     backgroundColor: '#1e1e1e',
@@ -238,38 +171,6 @@ const styles = StyleSheet.create({
     height: 8,
     backgroundColor: '#1E90FF',
   },
-  sectionTitle: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 20,
-    marginBottom: 8,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
-    marginBottom: 12,
-  },
-  statBox: {
-    backgroundColor: '#1e1e1e',
-    padding: 16,
-    borderRadius: 12,
-    width: '44%',
-    alignItems: 'center',
-  },
-  statNumber: { fontSize: 18, fontWeight: 'bold', color: '#fff' },
-  statLabel: { color: '#aaa' },
-  questRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1e1e1e',
-    marginHorizontal: 20,
-    marginBottom: 10,
-    borderRadius: 12,
-    padding: 14,
-  },
-  questText: { flex: 1, color: '#fff', fontSize: 16 },
-  questMeta: { color: '#aaa', fontSize: 12, marginRight: 8 },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

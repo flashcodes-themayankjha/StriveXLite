@@ -66,6 +66,14 @@ export default function SetQuestScreen() {
     await AsyncStorage.setItem('userExerciseSets', JSON.stringify(exerciseSets));
     await AsyncStorage.setItem('customWorkoutCategories', JSON.stringify(customCategories));
     alert('Workout plan saved!');
+    const saveAll = async () => {
+  await AsyncStorage.setItem('userWorkoutPlan', JSON.stringify(workoutPlan));
+  await AsyncStorage.setItem('userExerciseSets', JSON.stringify(exerciseSets));
+  await AsyncStorage.setItem('customWorkoutCategories', JSON.stringify(customCategories));
+  alert('Workout plan saved!');
+  router.replace('/home'); // ✅ This refreshes HomeScreen
+};
+
   };
 
   const addCustomCategory = async () => {
