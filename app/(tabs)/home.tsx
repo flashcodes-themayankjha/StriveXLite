@@ -2,16 +2,16 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Image, Pressable,
-  Modal, Dimensions, ScrollView, Animated, Easing, Alert, InteractionManager
+  Modal, Dimensions, ScrollView, Animated, Easing, InteractionManager
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
 
 import HeaderBar from '../../components/HeaderBar';
 import Stats from '../../components/home/Stats';
 import Quest from '../../components/home/Quest';
+import HydrationReminderModal from '../../components/home/HydrationReminderModal';
 
 const { width } = Dimensions.get('window');
 
@@ -21,6 +21,7 @@ export default function HomeScreen() {
   const [userData, setUserData] = useState<any>(null);
   const [exerciseList, setExerciseList] = useState<any[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [hydrationModalVisible, setHydrationModalVisible] = useState(false);
 
   const settingsRotateAnim = useState(new Animated.Value(0))[0];
 
@@ -72,6 +73,10 @@ export default function HomeScreen() {
   const totalSteps = 10000;
   const progress = (currentSteps / totalSteps) * 100;
 
+  const handleHydrationTapSeries = () => {
+    setHydrationModalVisible(true);
+  };
+
   return (
     <View style={styles.container}>
       <HeaderBar showBack showSettings={false} />
@@ -86,8 +91,12 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ⬇️ Modularized components */}
-        <Stats steps={currentSteps} distance={4.5} calories={350} />
+        <Stats
+          steps={currentSteps}
+          distance={4.5}
+          calories={350}
+          onHydrationTapSeries={handleHydrationTapSeries}
+        />
 
         <Quest
           exerciseList={exerciseList}
@@ -95,6 +104,12 @@ export default function HomeScreen() {
           onProfileUpdate={(profile) => setUserData(profile)}
         />
       </ScrollView>
+
+      {/* Hydration Modal */}
+      <HydrationReminderModal
+        visible={hydrationModalVisible}
+        onClose={() => setHydrationModalVisible(false)}
+      />
 
       {/* Settings Modal */}
       <Modal animationType="slide" transparent={true} visible={settingsVisible} onRequestClose={toggleSettingsModal}>
@@ -118,11 +133,10 @@ export default function HomeScreen() {
               <Text style={styles.modalBtnText}>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</Text>
             </Pressable>
 
-  <Pressable style={styles.modalBtn} onPress={() => router.push('/DBPreview')}>
-  <MaterialCommunityIcons name="code-tags-check" size={18} color="#fff" style={{ marginRight: 8 }} />
-  <Text style={styles.modalBtnText}>Component Preview</Text>
-</Pressable>
-
+            <Pressable style={styles.modalBtn} onPress={() => router.push('/DBPreview')}>
+              <MaterialCommunityIcons name="code-tags-check" size={18} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.modalBtnText}>Component Preview</Text>
+            </Pressable>
 
             <Pressable style={styles.modalBtn} onPress={handleLogout}>
               <Ionicons name="log-out-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
