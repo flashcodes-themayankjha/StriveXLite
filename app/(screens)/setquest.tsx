@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import ExerciseListModal from '../../components/ExerciseListModal';
 import { workoutCategories, defaultExercises } from '../../data/defaultPlan';
 import ExerciseCard from '../../components/ExerciseCard';
-import HeaderBar from '../../components/HeaderBar';
+import HeaderBar from '../../components/header/HeaderBar';
 
 const iconOptions = [
   'barbell-outline', 'bicycle-outline', 'walk-outline',

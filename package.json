@@ -21,6 +21,7 @@
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/native-stack": "^7.3.21",
     "expo": "~53.0.17",
+    "expo-av": "^15.1.7",
     "expo-blur": "~14.1.5",
     "expo-constants": "~17.1.7",
     "expo-font": "~13.3.2",
@@ -36,6 +37,7 @@
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.10",
     "expo-web-browser": "~14.2.0",
+    "lottie-react-native": "7.2.2",
     "moti": "^0.30.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -43,6 +45,7 @@
     "react-native": "0.79.5",
     "react-native-animatable": "^1.4.0",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-progress": "^5.0.1",
     "react-native-reanimated": "~3.17.4",
     "react-native-root-siblings": "^5.0.1",
     "react-native-root-toast": "^4.0.1",
@@ -54,8 +57,7 @@
     "react-native-web": "~0.20.0",
     "react-native-webview": "13.13.5",
     "tslib": "^2.8.1",
-    "yup": "^1.6.1",
-    "lottie-react-native": "7.2.2"
+    "yup": "^1.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

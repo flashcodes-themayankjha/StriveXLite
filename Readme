@@ -30,3 +30,7 @@ npm i react-native-toast-message
 npm install react-native-root-siblings
 npx expo install lottie-react-native
 
+
+npm install expo-av
+npm install react-native-animatable
+npm install react-native-progress 

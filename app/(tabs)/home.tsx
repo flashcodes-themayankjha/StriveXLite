@@ -8,7 +8,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import HeaderBar from '../../components/HeaderBar';
+import HeaderBar from '../../components/header/HeaderBar';
+
 import Stats from '../../components/home/Stats';
 import Quest from '../../components/home/Quest';
 import HydrationReminderModal from '../../components/home/HydrationReminderModal';

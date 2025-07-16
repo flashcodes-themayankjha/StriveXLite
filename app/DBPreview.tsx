@@ -13,24 +13,24 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function DebugScreen() {
-  const [debugData, setDebugData] = useState<any>({});
-
-  const keysToFetch = [
-    'userWorkoutPlan',
-    'userExerciseSets',
-    'customWorkoutCategories',
-    'hunterProfile',
-  ];
+  const [debugData, setDebugData] = useState<Record<string, any>>({});
+  const [allKeys, setAllKeys] = useState<string[]>([]);
 
   const loadDebugData = async () => {
-    const allData: any = {};
+    const keys = await AsyncStorage.getAllKeys();
+    const entries = await AsyncStorage.multiGet(keys);
 
-    for (const key of keysToFetch) {
-      const value = await AsyncStorage.getItem(key);
-      allData[key] = value ? JSON.parse(value) : '❌ Not Set';
+    const parsed: Record<string, any> = {};
+    for (const [key, value] of entries) {
+      try {
+        parsed[key] = JSON.parse(value ?? 'null');
+      } catch {
+        parsed[key] = value;
+      }
     }
 
-    setDebugData(allData);
+    setAllKeys(keys);
+    setDebugData(parsed);
   };
 
   useFocusEffect(() => {
@@ -40,14 +40,21 @@ export default function DebugScreen() {
   const clearAll = async () => {
     await AsyncStorage.clear();
     setDebugData({});
+    setAllKeys([]);
     Alert.alert('🧹 Cleared', 'All data removed from AsyncStorage');
   };
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>🧪 StriveX Debug Screen</Text>
+      <Text style={styles.title}>🧪 StriveX Debug Storage</Text>
 
-      {keysToFetch.map((key) => (
+      {allKeys.length === 0 && (
+        <Text style={{ color: '#aaa', textAlign: 'center', marginBottom: 20 }}>
+          No data found in AsyncStorage.
+        </Text>
+      )}
+
+      {allKeys.map((key) => (
         <View key={key} style={styles.card}>
           <Text style={styles.cardTitle}>{key}</Text>
           <Text style={styles.cardContent}>
@@ -115,3 +122,5 @@ const styles = StyleSheet.create({
   },
   clearText: { color: '#fff', marginLeft: 8 },
 });
+
+

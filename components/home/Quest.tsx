@@ -1,6 +1,13 @@
-
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Vibration,
+  Alert,
+  Animated,
+} from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { defaultExercises } from '../../data/defaultPlan';
@@ -8,15 +15,21 @@ import { defaultExercises } from '../../data/defaultPlan';
 export default function Quest() {
   const [exerciseList, setExerciseList] = useState<any[]>([]);
   const [todayCategory, setTodayCategory] = useState<string | null>(null);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const scaleAnimRefs = useRef<Animated.Value[]>([]);
+
+  const todayKey = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     (async () => {
-      const today = new Date().getDay(); // 0 - Sunday, 3 - Wednesday, etc.
+      const today = new Date().getDay();
       const planRaw = await AsyncStorage.getItem('userWorkoutPlan');
       const setsRaw = await AsyncStorage.getItem('userExerciseSets');
+      const completedRaw = await AsyncStorage.getItem('completedQuests');
 
       const workoutPlan = planRaw ? JSON.parse(planRaw) : {};
       const allSets = setsRaw ? JSON.parse(setsRaw) : {};
+      const completedData = completedRaw ? JSON.parse(completedRaw) : {};
 
       const selectedCategory = workoutPlan[today];
       setTodayCategory(selectedCategory || null);
@@ -27,50 +40,129 @@ export default function Quest() {
           : defaultExercises[selectedCategory] || [];
 
       setExerciseList(exercises);
+      setCompletedIds(new Set(completedData[todayKey] || []));
+
+      // 🟦 Initialize animation refs
+      scaleAnimRefs.current = exercises.map(() => new Animated.Value(1));
     })();
   }, []);
 
-  const calculateXP = (sets: number, reps: number) => Math.floor(5 + sets * reps * 0.5);
+  const calculateXP = (sets: number, reps: number, multiplier = 1) =>
+    Math.floor((10 + sets * reps * 0.4) * multiplier);
 
-  const completeExercise = async (exercise: any) => {
-    const xpGained = calculateXP(exercise.sets, exercise.reps);
+  const xpNeeded = (level: number) =>
+    Math.floor(100 + level ** 1.5 * 20);
+
+  const completeExercise = async (exercise: any, index: number) => {
+    Vibration.vibrate(70);
+
+    const exerciseId = `${todayCategory}_${index}`;
+    const alreadyCompleted = completedIds.has(exerciseId);
+
     const raw = await AsyncStorage.getItem('hunterProfile');
-    const profile = raw ? JSON.parse(raw) : { xp: 0, level: 1 };
+    const profile = raw
+      ? JSON.parse(raw)
+      : { xp: 0, level: 1, totalXp: 0, nextLevelXp: xpNeeded(1) };
 
-    profile.xp += xpGained;
+    let { xp, level, totalXp } = profile;
+    const xpGained = alreadyCompleted
+      ? calculateXP(exercise.sets, exercise.reps, 0.25)
+      : calculateXP(exercise.sets, exercise.reps);
+
+    xp += xpGained;
+    totalXp += xpGained;
+
     let leveledUp = false;
-
-    const xpNeeded = (level: number) => Math.floor(50 + 10 * level * 1.3);
-    while (profile.xp >= xpNeeded(profile.level)) {
-      profile.xp -= xpNeeded(profile.level);
-      profile.level++;
+    while (xp >= xpNeeded(level)) {
+      xp -= xpNeeded(level);
+      level++;
       leveledUp = true;
     }
 
-    await AsyncStorage.setItem('hunterProfile', JSON.stringify(profile));
+    const updated = {
+      ...profile,
+      xp,
+      level,
+      totalXp,
+      nextLevelXp: xpNeeded(level),
+    };
+
+    await AsyncStorage.setItem('hunterProfile', JSON.stringify(updated));
+
+    if (!alreadyCompleted) {
+      const completedRaw = await AsyncStorage.getItem('completedQuests');
+      const completedData = completedRaw ? JSON.parse(completedRaw) : {};
+      const todayList = new Set(completedData[todayKey] || []);
+      todayList.add(exerciseId);
+      completedData[todayKey] = Array.from(todayList);
+      await AsyncStorage.setItem('completedQuests', JSON.stringify(completedData));
+      setCompletedIds(todayList);
+    }
 
     Alert.alert(
       leveledUp ? '🎉 Level Up!' : '✅ Exercise Complete',
-      leveledUp ? `New Level: ${profile.level}` : `+${xpGained} XP`
+      `${alreadyCompleted ? '(Repeat Bonus) ' : ''}+${xpGained} XP`
+    );
+  };
+
+  const renderAnimatedPressable = (exercise: any, i: number) => {
+    const scaleAnim = scaleAnimRefs.current[i];
+    const exerciseId = `${todayCategory}_${i}`;
+    const completed = completedIds.has(exerciseId);
+
+    const onPressIn = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const onPressOut = () => {
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    return (
+      <Animated.View key={i} style={{ transform: [{ scale: scaleAnim }] }}>
+        <Pressable
+          style={styles.questRow}
+          onPress={() => completeExercise(exercise, i)}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+        >
+          <MaterialCommunityIcons
+            name="dumbbell"
+            size={20}
+            color="#ccc"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.questText}>{exercise.name}</Text>
+          <Text style={styles.questMeta}>
+            {exercise.reps} Reps • {exercise.sets} Sets
+          </Text>
+          <Ionicons
+            name="checkmark-done"
+            size={18}
+            color={completed ? '#1E90FF' : '#555'}
+          />
+        </Pressable>
+      </Animated.View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Daily Quest</Text>
+      <Text style={styles.sectionTitle}>🏆 Daily Quest</Text>
 
       {todayCategory ? (
         exerciseList.length > 0 ? (
-          exerciseList.map((exercise, i) => (
-            <Pressable key={i} style={styles.questRow} onPress={() => completeExercise(exercise)}>
-              <MaterialCommunityIcons name="dumbbell" size={20} color="#ccc" style={{ marginRight: 8 }} />
-              <Text style={styles.questText}>{exercise.name}</Text>
-              <Text style={styles.questMeta}>{exercise.reps} Reps • {exercise.sets} Sets</Text>
-              <Ionicons name="checkmark-done" size={18} color="#6cff6c" />
-            </Pressable>
-          ))
+          exerciseList.map((exercise, i) => renderAnimatedPressable(exercise, i))
         ) : (
-          <Text style={styles.emptyText}>No exercises found for "{todayCategory}".</Text>
+          <Text style={styles.emptyText}>
+            No exercises found for "{todayCategory}".
+          </Text>
         )
       ) : (
         <Text style={styles.emptyText}>No category set for today.</Text>
@@ -83,9 +175,9 @@ const styles = StyleSheet.create({
   container: { marginHorizontal: 20, marginBottom: 20 },
   sectionTitle: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
   },
   questRow: {
     flexDirection: 'row',
@@ -99,3 +191,4 @@ const styles = StyleSheet.create({
   questMeta: { color: '#aaa', fontSize: 12, marginRight: 8 },
   emptyText: { color: '#aaa', textAlign: 'center', marginTop: 10 },
 });
+
