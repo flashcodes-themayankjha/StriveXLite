@@ -151,7 +151,7 @@ const HeaderBar = () => {
 
             <Pressable style={styles.modalBtn} onPress={() => {
               rotateSettingsIcon(false);
-              router.push('/ExerciseCardPreview');
+              router.push('/DBPreview');
             }}>
               <Ionicons name="code-slash-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
               <Text style={styles.modalBtnText}>Component Preview</Text>
