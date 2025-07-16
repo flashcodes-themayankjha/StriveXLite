@@ -22,3 +22,11 @@ npx expo install react-native-reanimated react-native-gesture-handler
 npx expo install expo-haptics
 
 npx expo install expo-haptics
+npm install expo-sensors
+npx expo install expo-notifications
+npm install react-native-root-toast
+npm i react-native-toast-message
+
+npm install react-native-root-siblings
+npx expo install lottie-react-native
+
