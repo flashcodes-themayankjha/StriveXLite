@@ -68,7 +68,8 @@ export default function HunterDetails() {
         level: 0,
         exp: 0,
         rank: 'F',
-        title: 'Gem None',
+        title: 'None',
+        Gem: 'None'
       };
       await AsyncStorage.setItem('hunterProfile', JSON.stringify(profile));
       router.replace('/home');

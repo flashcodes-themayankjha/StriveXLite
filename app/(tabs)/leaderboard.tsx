@@ -1,15 +1,60 @@
-import { View, Text, StyleSheet } from 'react-native';
 
-export default function LeaderboardScreen() {
+
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import HeaderBar from '../../components/header/HeaderBar';
+
+export default function Leaderboard() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>🏆 Leaderboard Coming Soon</Text>
+      <HeaderBar showBack showSettings={false} />
+
+      <View style={styles.body}>
+        <MaterialIcons name="leaderboard" size={72} color="#ffdf00" style={{ marginBottom: 20 }} />
+        <Text style={styles.text}>Your Leaderboard Page</Text>
+        <Text style={styles.text}>Coming Soon</Text>
+                <Text style={styles.textsn}>Developed by Mayank Jha from Flashcodes</Text>
+      </View>
+
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Developed by Mayank Kumar Jha from Team Flashcodes
+        </Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0a0a0a' },
-  text: { color: '#fff', fontSize: 20 }
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+  },
+  body: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  text: {
+    color: '#fff',
+    fontSize: 20,
+    marginBottom: 6,
+  },
+  textsn: {
+        color: '#808080',
+        fontSize: 16,
+        marginTop: 25,
+        marginBottom: 6,
+    },
+  footer: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  footerText: {
+    color: '#888',
+    fontSize: 13,
+    textAlign: 'center',
+  },
 });
-
