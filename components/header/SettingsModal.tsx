@@ -97,6 +97,17 @@ const SettingsModal = ({ visible, onClose }: Props) => {
             <Text style={styles.modalBtnText}>Component Preview</Text>
           </Pressable>
 
+             <Pressable
+            style={styles.modalBtn}
+            onPress={() => handlePress(() => {
+              onClose();
+              router.push('/exerciselib');
+            })}
+          >
+            <Ionicons name="code-slash-outline" size={18} color="#fff" style={styles.icon} />
+            <Text style={styles.modalBtnText}>All Quests</Text>
+          </Pressable>
+
           <Pressable style={styles.modalBtn} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={18} color="#fff" style={styles.icon} />
             <Text style={styles.modalBtnText}>Logout</Text>
