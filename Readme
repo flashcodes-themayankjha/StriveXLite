@@ -34,3 +34,5 @@ npx expo install lottie-react-native
 npm install expo-av
 npm install react-native-animatable
 npm install react-native-progress 
+npm install react-native-gesture-handler
+
